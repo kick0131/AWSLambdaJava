@@ -1,0 +1,10 @@
+target
+/module-lambda-client/src/main/java/ignore/**
+/module-lambda-handler/src/main/java/ignore/**
+.vscode
+.classpath
+.project
+.settings
+.factorypath
+dependency-reduced-pom.xml
+
