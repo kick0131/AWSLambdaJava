@@ -17,4 +17,8 @@ public class ApiGatewayResult {
   Integer statusCode = 200;
   Map<String,String> headers = new HashMap<String,String> ();
   String body;
+  public ApiGatewayResult(){
+    // CORS
+    headers.put("Access-Control-Allow-Origin" , "*");
+  }
 }
