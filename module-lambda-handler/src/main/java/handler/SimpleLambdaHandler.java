@@ -2,8 +2,8 @@ package handler;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,8 +12,8 @@ import contents.ApiGatewayResult;
 
 public class SimpleLambdaHandler implements RequestHandler<Object, String> {
   static Logger log = LoggerFactory.getLogger(SimpleLambdaHandler.class);
-  // Json変換にはJacksonを利用
-  ObjectMapper mapper = new ObjectMapper();
+  // Jsonパーサ
+  Gson gson = new Gson();
 
   public static void main(String[] args) {
     System.out.println("Hello world");
@@ -35,10 +35,23 @@ public class SimpleLambdaHandler implements RequestHandler<Object, String> {
    * 
    * @param arg0 APIGatewayからのリクエストパラメータを期待
    * @param arg1 Lambda関数の情報
-     * @return リクエストパラメータをエコー応答する
-   * @throws JsonProcessingException
+   * @return リクエストパラメータをエコー応答する
+   * @throws Exception
    */
-  public ApiGatewayResult apiGwEcho(Object arg0, Context arg1) throws JsonProcessingException {
+  public ApiGatewayResult apiGwEcho(Object arg0, Context arg1) throws Exception {
+
+    // JsonObject型にパースしてからbody部を取得。
+    // body部はString型であることが仕様で決まっている。
+    JsonObject jsonobj = gson.fromJson(gson.toJson(arg0), JsonObject.class);
+    if (jsonobj.get("body").isJsonNull()) {
+      throw new Exception("Json value body is null");
+    }
+    if (jsonobj.get("body").isJsonObject()) {
+      throw new Exception("Json value is not APIGateway format");
+    }
+
+    // body部のJSONをDTOクラスにマッピングするサンプル
+    // TPrefDto registApiRequest = gson.fromJson(jsonobj.get("body").getAsString(), TPrefDto.class);
 
     // 戻り値は引数のエコー応答とする
     // 
@@ -51,7 +64,7 @@ public class SimpleLambdaHandler implements RequestHandler<Object, String> {
     // }
     // arg0にはbody部分が設定される
     ApiGatewayResult apiresult = new ApiGatewayResult();
-    apiresult.setBody(mapper.writeValueAsString(arg0));
+    apiresult.setBody(gson.toJson(arg0));
 
     return apiresult;
   }

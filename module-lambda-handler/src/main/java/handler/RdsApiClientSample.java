@@ -5,20 +5,20 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.rdsdata.AWSRDSData;
 import com.amazonaws.services.rdsdata.AWSRDSDataClientBuilder;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 
 import java.util.List;
+import java.util.Random;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import contents.ApiGatewayResult;
-import dto.TEmpDto;
-import dto.TOfficeDto;
+import contents.Util;
+import dto.TAreaDto;
 
 /**
- * Data API用のクライアントライブラリ練習
+ * Data API用のクライアントライブラリ操作<br>
+ * ビジネスロジックに集中できるので、余程の事が無い限りはこちらを使った方が安心
  */
 public class RdsApiClientSample implements RequestHandler<Object, String> {
   static Logger log = LoggerFactory.getLogger(RdsApiClientSample.class);
@@ -28,8 +28,8 @@ public class RdsApiClientSample implements RequestHandler<Object, String> {
   final String SECRET_ARN = "arn:aws:secretsmanager:XXXXX";
   // 接続先DB名
   final String DATABASE = "postgres";
-  // Json変換にはJacksonを利用
-  ObjectMapper mapper = new ObjectMapper();
+  // Jsonパーサ
+  Gson gson = new Gson();
   // DataAPIリソース
   AWSRDSData rdsData;
   // DataAPIクライアントライブラリ
@@ -48,8 +48,7 @@ public class RdsApiClientSample implements RequestHandler<Object, String> {
   /**
    * テーブル一覧取得
    * 
-   * 利用例
-   * List<DtoClass> records = getDtoRecords("select * from t_dto;", DtoClass.class);
+   * 利用例 List<DtoClass> records = getDtoRecords("select * from t_dto;", DtoClass.class);
    * 
    * @param sql 任意のテーブルレコードを取得するSQL文
    * @param obj 戻り値の型リテラル
@@ -62,6 +61,7 @@ public class RdsApiClientSample implements RequestHandler<Object, String> {
 
   /**
    * コンソール確認用
+   * 
    * @param args
    */
   public static void main(String[] args) {
@@ -70,57 +70,71 @@ public class RdsApiClientSample implements RequestHandler<Object, String> {
   }
 
   /**
-   * 標準のLambdaハンドラでDataAPIを実行する例
+   * 未定義
    */
   @Override
   public String handleRequest(Object arg0, Context arg1) {
-    String SQL = "select * from t_emp";
-
-    System.out.println("called handleRequest");
     log.info("--- {} start ---", "handleRequest");
- 
-    // 複数レコードの取得
-    List<TEmpDto> result_l = client.forSql(SQL).execute().mapToList(TEmpDto.class);
-    for (TEmpDto item : result_l) {
-      try {
-        // JSON変換
-        log.info(mapper.writeValueAsString(item));
-      } catch (JsonProcessingException e) {
-        log.error(e.getMessage());
-        e.printStackTrace();
-      }
-    }
 
-    // 主キー指定
-    SQL = String.format("select * from t_office where office_id = %d", 1);
-    TOfficeDto t_office = client.forSql(SQL).execute().mapToSingle(TOfficeDto.class);
-
-    // JSON文字列として返す例
-    String result = "";
-    try {
-      result = mapper.writeValueAsString(t_office);
-    } catch (JsonProcessingException e) {
-      log.error(e.getMessage());
-    }
 
     log.info("--- {} end ---", "handleRequest");
-    return result;
+    return "Success";
   }
 
   /**
-   * API Gatewayに応答データを返す場合のサンプル（GET）
-   * @param arg0
-   * @param arg1
-   * @return
-   * @throws JsonProcessingException
+   * 1レコード読込
    */
-  public ApiGatewayResult myhandler(Object arg0, Context arg1) throws JsonProcessingException {
+  public String selectSingle(Object arg0, Context arg1) {
+    log.info("--- {} start ---", Util.getMethodName());
 
-    // 戻り値パラメータのマッピング
-    ApiGatewayResult apiresult = new ApiGatewayResult();
-    apiresult.setBody("{\"key1\":\"value1\",\"key2\":\"value2\"}");
+    // 主キー指定
+    String SQL = String.format("select * from t_area where comp_id = %d", 1);
+    TAreaDto t_area = client.forSql(SQL).execute().mapToSingle(TAreaDto.class);
 
-    return apiresult;
+    log.info("--- {} end ---", Util.getMethodName());
+    return gson.toJson(t_area);
+  }
+
+  /**
+   * 複数レコード読込
+   */
+  public String selectMulti(Object arg0, Context arg1) {
+    log.info("--- {} start ---", Util.getMethodName());
+
+    // 複数レコードの取得
+    String SQL = "select * from t_area";
+    List<TAreaDto> result_l = getDtoRecords(SQL,TAreaDto.class);
+    for (TAreaDto item : result_l) {
+      // JSON変換
+      log.info(gson.toJson(item));
+    }
+
+    log.info("--- {} end ---", Util.getMethodName());
+    return gson.toJson(result_l);
+  }
+
+  /**
+   * 1レコード登録
+   */
+  public String insertSingle(Object arg0, Context arg1) {
+    log.info("--- {} start ---", Util.getMethodName());
+
+    // 値の設定は以下の方法から行う
+    // ・直接valuesに記載
+    // ・withParamSetsのクラス変数をマッピング
+    TAreaDto areaDto = new TAreaDto();
+    areaDto.setArea_name("Sample Area");
+    String SQL_insert_emp = "insert into t_area(comp_id, area_cd, area_name)";
+    String SQL_insert_emp_values = String.format("values( %d, '%s', :area_name)", new Random().nextInt(999), "99");
+
+    // DataAPI呼び出し
+    client.forSql(SQL_insert_emp + SQL_insert_emp_values)
+      .withParamSets(areaDto)
+      .execute();
+
+
+    log.info("--- {} end ---", Util.getMethodName());
+    return "Success";
   }
 
 }

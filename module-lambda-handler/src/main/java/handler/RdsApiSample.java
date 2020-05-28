@@ -13,6 +13,10 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * DataAPI サンプルコード<br>
+ * 細かい制御が必要な場合に利用を検討する。
+ */
 public class RdsApiSample implements RequestHandler<Object, String> {
   static Logger log = LoggerFactory.getLogger(RdsApiSample.class);
 
