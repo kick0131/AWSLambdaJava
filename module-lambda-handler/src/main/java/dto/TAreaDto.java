@@ -11,4 +11,4 @@ public class TAreaDto {
   public String min_lon;
   public String max_lat;
   public String max_lon;
-  }
+}

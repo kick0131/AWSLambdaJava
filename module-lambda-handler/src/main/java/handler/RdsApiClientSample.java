@@ -7,6 +7,9 @@ import com.amazonaws.services.rdsdata.AWSRDSData;
 import com.amazonaws.services.rdsdata.AWSRDSDataClientBuilder;
 import com.google.gson.Gson;
 
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Random;
 
@@ -15,6 +18,9 @@ import org.slf4j.LoggerFactory;
 
 import contents.Util;
 import dto.TAreaDto;
+
+import dto.TByteSampleDto;
+import dto.TTypeSampleDto;
 
 /**
  * Data API用のクライアントライブラリ操作<br>
@@ -27,7 +33,7 @@ public class RdsApiClientSample implements RequestHandler<Object, String> {
   // RDSに関連付けられたSecret ManagerのARN
   final String SECRET_ARN = "arn:aws:secretsmanager:XXXXX";
   // 接続先DB名
-  final String DATABASE = "postgres";
+  final String DATABASE = "dataapi";
   // Jsonパーサ
   Gson gson = new Gson();
   // DataAPIリソース
@@ -132,6 +138,58 @@ public class RdsApiClientSample implements RequestHandler<Object, String> {
       .withParamSets(areaDto)
       .execute();
 
+
+    log.info("--- {} end ---", Util.getMethodName());
+    return "Success";
+  }
+
+
+  /**
+   * 型の対応確認
+   */
+  public String someTypeTable(Object arg0, Context arg1) {
+    log.info("--- {} start ---", Util.getMethodName());
+
+    // Select
+    List<TTypeSampleDto> typesample = getDtoRecords("select * from t_typesample",TTypeSampleDto.class);
+    log.info(gson.toJson(typesample));
+    
+    // Insert
+    TTypeSampleDto insertDto = new TTypeSampleDto();
+    insertDto.setBuilding_id(Integer.MIN_VALUE);
+//    insertDto.setBuilding_name("あいうえおかきくけこさしすせそたちつてとなにぬけのあいうえおかきくけこさしすせそたちつてとなにぬけのあいうえおかきくけこさしすせそたちつてとなにぬけのあいうえおかきくけこさしすせそたちつてとなにぬけのあいうえおかきくけこさしすせそたちつてとなにぬけのあいうえおかきくけこさしすせそたちつてとなにぬけのあいうえおかきくけこさしすせそたちつてとなにぬけのあいうえおかきくけこさしすせそたちつてとなにぬけのあいうえおかきくけこさしすせそたちつてとなにぬけのあいうえおかきくけこさしすせそたちつてとなにぬけのあいうえお");
+    insertDto.setBuilding_name("sample data");
+    insertDto.setBuilding_floor(Integer.parseInt(String.format("%d",Short.MIN_VALUE)));
+    insertDto.setBuilding_height(BigDecimal.valueOf(-999.9999999999));
+    insertDto.setX1(Double.MAX_VALUE);
+    insertDto.setY1(Double.MIN_VALUE);
+    insertDto.setLastupdate(LocalDateTime.now());
+    client.forSql("INSERT INTO t_typesample VALUES(:building_id, :building_name, :building_floor, :building_height, :x1, :y1, :lastupdate)")
+      .withParamSets(insertDto)
+      .execute();
+
+    log.info("--- {} end ---", Util.getMethodName());
+    return "Success";
+  }
+
+  /**
+   * 型の対応確認(Byte型)
+   */
+  public String byteTable(Object arg0, Context arg1) {
+    log.info("--- {} start ---", Util.getMethodName());
+
+    // Select
+    List<TByteSampleDto> typesample = getDtoRecords("select * from t_byte",TByteSampleDto.class);
+    log.info(gson.toJson(typesample));
+    
+    // Insert
+    TByteSampleDto insertDto = new TByteSampleDto();
+    insertDto.setId(Integer.MIN_VALUE);
+    insertDto.setImage("サンプル１".getBytes(StandardCharsets.UTF_8));
+    log.info("-- Insert");
+    client.forSql("INSERT INTO t_byte VALUES(:id, :image)")
+      .withParamSets(insertDto)
+      .execute();
 
     log.info("--- {} end ---", Util.getMethodName());
     return "Success";
